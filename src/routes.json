@@ -1,0 +1,7 @@
+{
+  "routes": {
+    "homepage": "/",
+    "iter": "/iter",
+    "homo_iter": "/homo_iter"
+  }
+}
