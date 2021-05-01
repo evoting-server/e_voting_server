@@ -1,8 +1,6 @@
 {
   "routes": {
     "homepage": "/",
-    "iter": "/iter",
-    "homo_iter": "/homo_iter",
     "create_voter": "/create_voter"
   }
 }
