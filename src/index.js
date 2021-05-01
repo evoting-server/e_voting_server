@@ -5,7 +5,7 @@ const bodyParser = require("body-parser"); // body parsing module
 const { spawn } = require("child_process"); // child_process to read from python file
 const { routes } = require("./routes.json"); // all defined routes
 const { prisma } = require("../prisma/prisma"); // prisma client
-const { uuid } = require("./uuid");
+const { uuid } = require("./uuid"); // generate a random ID for the voter
 
 // initialize express app
 const app = express();
@@ -22,18 +22,8 @@ app.get(routes.homepage, (req, res) => {
   res.status(200).send("Whitelabel");
 });
 
-// homo_iter - post request
-app.post(routes.homo_iter, (req, res) => {
-  res.status(200).send("Whitelabel");
-});
-
-// iter - post request
-app.post(routes.iter, (req, res) => {
-  res.status(200).send("Whitelabel");
-});
-
 // create voter - post request
-app.post(routes.create_voter, (req, res) => {
+app.post(routes.create_voter, async (req, res) => {
   // parse request body as JSON
   req.body = JSON.parse(Object.keys(req.body)[0]);
 
@@ -44,14 +34,33 @@ app.post(routes.create_voter, (req, res) => {
   // const candidate = req.body.candidate
   const { name, list, candidate } = req.body;
 
+  const python_process = spawn("python", [
+    "pylib/custom_hash.py",
+    list,
+    candidate,
+  ]);
+
+  // data is returned as buffer from python
+  // Buffer objects are used to represent a fixed-length sequence of bytes
+  const hashed_attributes_buffer = await new Promise((resolve, reject) => {
+    python_process.stdout.on("data", (data) => resolve(data));
+    python_process.stderr.on("data", (error) => reject(error));
+  });
+
+  // by using the "toString()" method, we know that our buffer is returned as
+  // a buffered string with 2 values separated by a comma
+  // each value represents respectively the list and the candidate hashed strings
+  // split the string to become an array of 2 strings to upload later in the database
+  const hashed_attributes = hashed_attributes_buffer.toString().split(",");
+
   // create a voter on the database using prisma
   prisma.voter
     .create({
       data: {
         id: uuid(12),
         name,
-        list: String(list),
-        candidate: String(candidate),
+        list: hashed_attributes[0],
+        candidate: hashed_attributes[1],
       },
     })
     .then((response) => {
