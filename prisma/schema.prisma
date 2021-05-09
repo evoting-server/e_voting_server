@@ -11,8 +11,13 @@ generator client {
 }
 
 model Voter {
-  id String @id
-  name String?
-  list String?
+  id        String  @id
+  list      String?
   candidate String?
+}
+
+model Total {
+  id         String  @id
+  lists      String?
+  Candidates String?
 }
