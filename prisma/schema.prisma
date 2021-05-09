@@ -3,7 +3,7 @@
 
 datasource db {
   provider = "postgresql"
-  url      = "postgres://zfkgqxeyskfggn:b07697d44c1efc82adba489be09ec2d17dd6b26a6d155ea2d6686b6a352d4b50@ec2-34-254-69-72.eu-west-1.compute.amazonaws.com:5432/dctlpndkif1b2"
+  url      = "postgres://xgrmuwffsexcbq:5309cd9aedcaf9883a05a4cf08e00a937876cd2cf49fd1352e0c61501ea7d2e8@ec2-52-213-167-210.eu-west-1.compute.amazonaws.com:5432/dfgnkqod42ks0f"
 }
 
 generator client {
