@@ -32,44 +32,102 @@ app.post(routes.create_voter, async (req, res) => {
   // const name = req.body.name
   // const list = req.body.list
   // const candidate = req.body.candidate
-  const { name, list, candidate } = req.body;
+  const { list, candidate } = req.body;
 
-  const python_process = spawn("python", [
-    "pylib/custom_hash.py",
-    list,
-    candidate,
-  ]);
+  function getPythonProcess(filename, args) {
+    if (!args.length) return;
+    // spawn python process
+    const process = spawn("python", [filename, ...args]);
+    // data is returned as buffer from python
+    // Buffer objects are used to represent a fixed-length sequence of bytes
+    return new Promise((resolve, reject) => {
+      // by using the "toString()" method, we know that our buffer is returned as
+      // a buffered string with 2 values separated by a comma
+      // each value represents respectively the list and the candidate hashed strings
+      // split the string to become an array of 2 strings to upload later in the database
+      process.stdout.on("data", (data) => resolve(data.toString().split(",")));
+      process.stderr.on("data", (error) => reject(error));
+    });
+  }
 
-  // data is returned as buffer from python
-  // Buffer objects are used to represent a fixed-length sequence of bytes
-  const hashed_attributes_buffer = await new Promise((resolve, reject) => {
-    python_process.stdout.on("data", (data) => resolve(data));
-    python_process.stderr.on("data", (error) => reject(error));
-  });
+  // encrypted attributes returned from python
+  const voter_encrypted_attributes = await getPythonProcess(
+    "pylib/encryption.py",
+    [list, candidate]
+  );
 
-  // by using the "toString()" method, we know that our buffer is returned as
-  // a buffered string with 2 values separated by a comma
-  // each value represents respectively the list and the candidate hashed strings
-  // split the string to become an array of 2 strings to upload later in the database
-  const hashed_attributes = hashed_attributes_buffer.toString().split(",");
+  // message to send back to the app as response
+  const message = {};
 
   // create a voter on the database using prisma
-  prisma.voter
+  await prisma.voter
     .create({
       data: {
         id: uuid(12),
-        name,
-        list: hashed_attributes[0],
-        candidate: hashed_attributes[1],
+        list: voter_encrypted_attributes[0],
+        candidate: voter_encrypted_attributes[1],
       },
     })
     .then((response) => {
-      return res.status(200).json(response);
+      message.voter = response;
     })
     .catch((error) => {
       console.error(error);
       return res.status(500).json(error);
     });
+
+  // return all voters from database
+  const all_voters = await prisma.voter.findMany();
+
+  // filter voter lists and candidates separately for addition
+  const all_lists = all_voters.map((voter) => voter.list);
+  const all_candidates = all_voters.map((voter) => voter.candidate);
+
+  // make addition using python addition.py
+  const returned_addition = await getPythonProcess("pylib/addition.py", [
+    all_lists,
+    all_candidates,
+  ]);
+
+  // return all totals from database
+  const all_totals = await prisma.total.findMany();
+  // data to update in database
+  const total_data = {
+    lists: returned_addition[0],
+    Candidates: returned_addition[1],
+  };
+
+  // update total in database
+  if (all_totals.length == 0) {
+    await prisma.total
+      .create({
+        data: { id: uuid(12), ...total_data },
+      })
+      .then((response) => {
+        message.total = response;
+      })
+      .catch((error) => {
+        console.error(error);
+        return res.status(500).json(error);
+      });
+  } else {
+    await prisma.total
+      .update({
+        where: {
+          id: all_totals[0].id,
+        },
+        data: total_data,
+      })
+      .then((response) => {
+        message.total = response;
+      })
+      .catch((error) => {
+        console.error(error);
+        return res.status(500).json(error);
+      });
+  }
+
+  return res.status(200).json(message);
 });
 
 // start the app
