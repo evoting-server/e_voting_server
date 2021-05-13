@@ -16,13 +16,18 @@ candidates = args[1].split(",")
 n1, _ = pk1
 n2, _ = pk2
 
-lists_addition = 0
-candidates_addition = 0
+lists_addition = int(lists[0])
+candidates_addition = int(candidates[0])
 
-for value in lists:
-    lists_addition = secure_addition(int(value), lists_addition, n1)
+lists.pop(0)
+candidates.pop(0)
 
-for value in candidates:
-    candidates_addition = secure_addition(int(value), candidates_addition, n2)
+if(len(lists) >= 1):
+    for value in lists:
+        lists_addition = secure_addition(int(value), lists_addition, n1)
+
+if(len(candidates) >= 1):
+    for value in candidates:
+        candidates_addition = secure_addition(int(value), candidates_addition, n2)
 
 print(str(lists_addition) + "," + str(candidates_addition))
