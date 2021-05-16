@@ -17,9 +17,47 @@ app.use(cors());
 // enables body parsing for POST requests
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// python request
+function getPythonProcess(filename, args) {
+  if (!args?.length) return;
+  // spawn python process
+  const process = spawn("python", [filename, ...args]);
+  // data is returned as buffer from python
+  // Buffer objects are used to represent a fixed-length sequence of bytes
+  return new Promise((resolve, reject) => {
+    // by using the "toString()" method, we know that our buffer is returned as
+    // a buffered string with 2 values separated by a comma
+    // each value represents respectively the list and the candidate hashed strings
+    // split the string to become an array of 2 strings to upload later in the database
+    process.stdout.on("data", (data) => resolve(data.toString()));
+    process.stderr.on("data", (error) => reject(error));
+  }).catch((err) => console.error(err.toString()));
+}
+
 // landing page - get request
 app.get(routes.homepage, (req, res) => {
-  res.status(200).send("Whitelabel");
+  res.sendFile("views/index.html", { root: __dirname });
+});
+
+// get all decrypted values
+app.get(routes.get_decrypted_values, async (req, res) => {
+  // return all voters from database
+  const all_voters = await prisma.voter.findMany();
+
+  // filter voter lists and candidates separately for addition
+  const all_lists = all_voters.map((voter) => voter.list);
+  const all_candidates = all_voters.map((voter) => voter.candidate);
+
+  // decrypt using python decryption.py
+  let returned_decryption = await getPythonProcess("pylib/decryption.py", [
+    all_lists,
+    all_candidates,
+  ]);
+
+  // replace single quotes with double quotes to be able to parse them as JSON for javascript
+  returned_decryption = JSON.parse(returned_decryption.replace(/'/g, '"'));
+
+  res.status(200).json(returned_decryption);
 });
 
 // create voter - post request
@@ -34,27 +72,10 @@ app.post(routes.create_voter, async (req, res) => {
   // const candidate = req.body.candidate
   const { list, candidate } = req.body;
 
-  function getPythonProcess(filename, args) {
-    if (!args.length) return;
-    // spawn python process
-    const process = spawn("python", [filename, ...args]);
-    // data is returned as buffer from python
-    // Buffer objects are used to represent a fixed-length sequence of bytes
-    return new Promise((resolve, reject) => {
-      // by using the "toString()" method, we know that our buffer is returned as
-      // a buffered string with 2 values separated by a comma
-      // each value represents respectively the list and the candidate hashed strings
-      // split the string to become an array of 2 strings to upload later in the database
-      process.stdout.on("data", (data) => resolve(data.toString().split(",")));
-      process.stderr.on("data", (error) => reject(error));
-    });
-  }
-
   // encrypted attributes returned from python
-  const voter_encrypted_attributes = await getPythonProcess(
-    "pylib/encryption.py",
-    [list, candidate]
-  );
+  const voter_encrypted_attributes = (
+    await getPythonProcess("pylib/encryption.py", [list, candidate])
+  ).split(",");
 
   // message to send back to the app as response
   const message = {};
@@ -84,10 +105,9 @@ app.post(routes.create_voter, async (req, res) => {
   const all_candidates = all_voters.map((voter) => voter.candidate);
 
   // make addition using python addition.py
-  const returned_addition = await getPythonProcess("pylib/addition.py", [
-    all_lists,
-    all_candidates,
-  ]);
+  const returned_addition = (
+    await getPythonProcess("pylib/addition.py", [all_lists, all_candidates])
+  ).split(",");
 
   // return all totals from database
   const all_totals = await prisma.total.findMany();
