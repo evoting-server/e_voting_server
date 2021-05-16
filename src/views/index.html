@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Decrypted Values</title>
+    <style>
+      table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+      }
+
+      td,
+      th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+      }
+
+      tr:nth-child(even) {
+        background-color: #dddddd;
+      }
+    </style>
+  </head>
+  <body>
+    <p>Loading...</p>
+
+    <script>
+      fetch("/decrypt")
+        .then((res) => res.json())
+        .then((data) => {
+          console.log(data);
+
+          document.getElementsByTagName("p")[0].remove();
+
+          const table = document.createElement("table");
+
+          const table_data = data.map(
+            (vote, index) =>
+              `<tr> <td>${index}</td> <td>${vote.list.toLocaleString()}</td> <td>${vote.candidate.toLocaleString()}</td> </tr>`
+          );
+
+          table.innerHTML = `<tr> <td>Voter</td> <td>List</td> <td>Candidate</td> </tr> ${table_data}`;
+
+          document.body.appendChild(table);
+
+          table.childNodes[1].remove();
+        })
+        .catch(console.error);
+    </script>
+  </body>
+</html>
