@@ -1,6 +1,7 @@
 {
   "routes": {
     "homepage": "/",
-    "create_voter": "/create_voter"
+    "create_voter": "/create_voter",
+    "get_decrypted_values": "/decrypt"
   }
 }
