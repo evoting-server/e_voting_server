@@ -39,7 +39,7 @@
 
           const table_data = data.map(
             (vote, index) =>
-              `<tr> <td>${index}</td> <td>${vote.list.toLocaleString()}</td> <td>${vote.candidate.toLocaleString()}</td> </tr>`
+              `<tr> <td>${index + 1}</td> <td>${vote.list.toLocaleString()}</td> <td>${vote.candidate.toLocaleString()}</td> </tr>`
           );
 
           table.innerHTML = `<tr> <td>Voter</td> <td>List</td> <td>Candidate</td> </tr> ${table_data}`;
