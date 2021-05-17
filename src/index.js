@@ -49,13 +49,16 @@ app.get(routes.get_decrypted_values, async (req, res) => {
   const all_candidates = all_voters.map((voter) => voter.candidate);
 
   // return total from database
-  const total_votes = (await prisma.total.findMany())[0];
+  const total_votes = await prisma.total.findMany();
+  const total_lists = total_votes[0].lists;
+  const total_candidates = total_votes[0].Candidates;
 
   // decrypt using python decryption.py
   let returned_decryption = await getPythonProcess("pylib/decryption.py", [
     all_lists,
     all_candidates,
-    total_votes,
+    total_lists,
+    total_candidates,
   ]);
 
   // replace single quotes with double quotes to be able to parse them as JSON for javascript
