@@ -40,7 +40,7 @@
           const table_data = data.map(
             (vote, index) =>
               `<tr> <td>${
-                index == data.length - 1 ? "<b>TOTAL</b>" : index + 1
+                index == data.length - 1 ? "TOTAL" : index + 1
               }</td> <td>${vote.list.toLocaleString()}</td> <td>${vote.candidate.toLocaleString()}</td> </tr>`
           );
 
