@@ -27,5 +27,13 @@ for index, encrypted_list in enumerate(encrypted_lists):
         "list": decrypted_list,
         "candidate": decrypted_candidate
     })
-    
+
+encrypted_total = args[2]
+decrypted_total_lists = decrypt(pk1, sk1, int(encrypted_total["lists"]))
+decrypted_total_candidates = decrypt(pk2, sk2, int(encrypted_total["Candidates"]))
+decrypted_values.append({
+    "list": decrypted_total_lists,
+    "candidate": decrypted_total_candidates
+})
+
 print(decrypted_values)
